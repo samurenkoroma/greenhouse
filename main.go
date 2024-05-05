@@ -34,7 +34,7 @@ func main() {
 
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", broker, port))
-	opts.SetClientID("go_mqtt_client")
+	opts.SetClientID("tiun_client[go]")
 	opts.OnConnect = connectHandler
 	opts.OnConnectionLost = connectLostHandler
 	opts.SetDefaultPublishHandler(messagePubHandler)
@@ -59,7 +59,7 @@ func main() {
 }
 
 func sub(client mqtt.Client) {
-	topic := "paho/temperature"
+	topic := "tiun/base"
 	token := client.Subscribe(topic, 1, nil)
 	token.Wait()
 	fmt.Printf("Subscribed to topic: %s \n", topic)
