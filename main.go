@@ -54,8 +54,13 @@ func main() {
 
 	go sub(client)
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
+	http.HandleFunc("/api", apiHandler)
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
+}
+
+func apiHandler(writer http.ResponseWriter, request *http.Request) {
+	writer.Write([]byte("{\"status\": \"ok\"}"))
 }
 
 func sub(client mqtt.Client) {
