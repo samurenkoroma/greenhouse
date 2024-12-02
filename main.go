@@ -29,7 +29,7 @@ func main() {
 
 	// Create new metrics and register them using the custom registry.
 	m := NewMetrics(reg)
-	var broker = "my.dom"
+	var broker = "lab.raspi"
 	var port = 1883
 
 	opts := mqtt.NewClientOptions()
@@ -39,11 +39,12 @@ func main() {
 	opts.OnConnectionLost = connectLostHandler
 	opts.SetDefaultPublishHandler(messagePubHandler)
 	opts.SetDefaultPublishHandler(func(client mqtt.Client, msg mqtt.Message) {
-		var sensors []Sensor
-		json.Unmarshal(msg.Payload(), &sensors)
-		for _, v := range sensors {
+		fmt.Printf("Received message: %s from topic: %s\n", msg.Payload(), msg.Topic())
+		var device Device
+		json.Unmarshal(msg.Payload(), &device)
+		for _, v := range device.Sensors {
 
-			m.sensors.With(prometheus.Labels{"name": v.Name, "type": v.Type}).Set(math.Round(v.Value*10) / 10)
+			m.sensors.With(prometheus.Labels{"name": fmt.Sprintf("%s-%s", device.DeviceId, v.Name), "type": v.Type}).Set(math.Round(v.Value*10) / 10)
 		}
 	})
 
@@ -64,12 +65,16 @@ func apiHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 func sub(client mqtt.Client) {
-	topic := "tiun/base"
+	topic := "homeapp/meteo"
 	token := client.Subscribe(topic, 1, nil)
 	token.Wait()
 	fmt.Printf("Subscribed to topic: %s \n", topic)
 }
 
+type Device struct {
+	DeviceId string   `json:"deviceId"`
+	Sensors  []Sensor `json:"sensors"`
+}
 type Sensor struct {
 	Name  string  `json:"name"`
 	Type  string  `json:"type"`
@@ -84,7 +89,7 @@ func NewMetrics(reg prometheus.Registerer) *metrics {
 		sensors: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "sensors",
-				Help: "Текущая показания",
+				Help: "Текущие показания",
 			},
 			[]string{"name", "type"},
 		)}
